@@ -518,13 +518,92 @@ export default {
 							订阅内容 = Clash订阅配置文件热补丁(订阅内容, config_JSON);
 							responseHeaders["content-type"] = 'application/x-yaml; charset=utf-8';
 						}
-						return new Response(订阅内容, { status: 200, headers: responseHeaders });
-					}
+						// 添加 Oracle SS 节点到订阅（所有类型）
+						const oracleYAML = [
+							'  - {"name":"Oracle-SS-5443","server":"129.153.217.158","port":5443,"type":"ss","cipher":"chacha20-ietf-poly1305","password":"XEWv0WHpqSkJyTTZ","udp":true}',
+							'  - {"name":"Oracle-SS-8443","server":"129.153.217.158","port":8443,"type":"ss","cipher":"chacha20-ietf-poly1305","password":"XEWv0WHpqSkJyTTZ","udp":true}',
+						];
+						if (订阅类型 === 'mixed') {
+							// Mixed: add as SS links
+							const oracleSS = oracleYAML.map(y => {
+								const m = y.match(/password":"([^"]+)/);
+								return 'ss://' + btoa('chacha20-ietf-poly1305:' + (m ? m[1] : '')) + '@' + y.match(/"server":"([^"]+)/)[1] + ':' + y.match(/"port":(\d+)/)[1] + '#' + y.match(/"name":"([^"]+)/)[1];
+							}).join('\n');
+							订阅内容 = 订阅内容 + '\n' + oracleSS + '\n';
+						} else {
+							// Clash/Singbox: add as YAML nodes in proxies section
+							const yamlStr = oracleYAML.join('\n');
+							const idx = 订阅内容.indexOf('\nproxies:\n');
+							if (idx >= 0) {
+								const ins = 订阅内容.indexOf('\n', idx + 10) + 1;
+								订阅内容 = 订阅内容.slice(0, ins) + yamlStr + '\n' + 订阅内容.slice(ins);
+							}
+						}
+												return new Response(订阅内容, { status: 200, headers: responseHeaders });
+						      }
 				} else if (访问路径 === 'locations') {//反代locations列表
 					const cookies = request.headers.get('Cookie') || '';
 					const authCookie = cookies.split(';').find(c => c.trim().startsWith('auth='))?.split('=')[1];
 					if (authCookie && authCookie == await MD5MD5(UA + 加密秘钥 + 管理员密码)) return fetch(new Request('https://speed.cloudflare.com/locations', { headers: { 'Referer': 'https://speed.cloudflare.com/' } }));
-				} else if (访问路径 === 'robots.txt') return new Response('User-agent: *\nDisallow: /', { status: 200, headers: { 'Content-Type': 'text/plain; charset=UTF-8' } });
+				} else if (访问路径 === 'oracle') {
+						const oracleHTML = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Oracle 节点</title>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#0f172a;color:#e2e8f0;padding:20px;min-height:100vh}
+.card{background:#1e293b;border-radius:16px;padding:24px;max-width:480px;margin:0 auto 16px}
+h1{font-size:20px;margin-bottom:20px;color:#f59e0b}
+.node{border:1px solid #334155;border-radius:12px;padding:16px;margin-bottom:12px}
+.node h3{font-size:14px;margin-bottom:8px;color:#22c55e}
+.node .info{font-size:12px;color:#94a3b8;margin-bottom:8px;word-break:break-all}
+.node .copy{background:#0f172a;border:none;color:#22c55e;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:12px}
+.node .copy:hover{background:#334155}
+.qr{background:#0f172a;border-radius:12px;padding:16px;text-align:center;margin-top:12px}
+.qr #qrcode{display:inline-block;background:white;padding:8px;border-radius:8px}
+.link{font-size:11px;color:#64748b;word-break:break-all;margin-top:8px;padding:8px;background:#0f172a;border-radius:8px}
+</style>
+</head>
+<body>
+<div class="card">
+<h1>Oracle 节点</h1>
+<div class="node">
+<h3>Oracle-SS-5443</h3>
+<div class="info" id="link1">ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTpYRVd2MFdIcHFTa0p5VFRa-QDEyOS4xNTMuMjE3LjE1ODo1NDQzI09yYWNsZS1TUy01NDQz</div>
+<button class="copy" onclick="copy(1)">复制链接</button>
+<div class="qr"><div id="qrcode1"></div></div>
+</div>
+<div class="node">
+<h3>Oracle-SS-8443</h3>
+<div class="info" id="link2">ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTpYRVd2MFdIcHFTa0p5VFRa-QDEyOS4xNTMuMjE3LjE1ODo4NDQzI09yYWNsZS1TUy04NDQz</div>
+<button class="copy" onclick="copy(2)">复制链接</button>
+<div class="qr"><div id="qrcode2"></div></div>
+</div>
+<div class="node">
+<h3>Clash 订阅</h3>
+<div class="link">https://sub.aibuyerclaw.com/clash-oracle.yaml</div>
+<button class="copy" onclick="copySub()">复制订阅</button>
+</div>
+</div>
+<script>
+const links = [
+	document.getElementById("link1").textContent,
+	document.getElementById("link2").textContent
+];
+links.forEach((text,i) => {
+	new QRCode(document.getElementById("qrcode"+(i+1)),{text,width:180,height:180,correctLevel:QRCode.CorrectLevel.M});
+});
+function copy(n){navigator.clipboard.writeText(links[n-1]).then(()=>{const b=event.target;b.textContent="已复制";setTimeout(()=>{b.textContent="复制链接"},1500)})}
+function copySub(){navigator.clipboard.writeText("https://sub.aibuyerclaw.com/clash-oracle.yaml").then(()=>{const b=event.target;b.textContent="已复制";setTimeout(()=>{b.textContent="复制订阅"},1500)})}
+</script>
+</body>
+</html>`;
+						return new Response(oracleHTML, { status: 200, headers: { 'Content-Type': 'text/html;charset=utf-8' } });
+					} else if (访问路径 === 'robots.txt') return new Response('User-agent: *\nDisallow: /', { status: 200, headers: { 'Content-Type': 'text/plain; charset=UTF-8' } });
 			} else if (!envUUID) return fetch(Pages静态页面 + '/noKV').then(r => { const headers = new Headers(r.headers); headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate'); headers.set('Pragma', 'no-cache'); headers.set('Expires', '0'); return new Response(r.body, { status: 404, statusText: r.statusText, headers }) });
 		}
 
