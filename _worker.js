@@ -19,6 +19,47 @@ export default {
 			请求URL文本 = 请求URL主体部分.replace(/%3f/i, '?') + 请求URL锚点部分;
 		}
 		const url = new URL(请求URL文本);
+
+		// Oracle 节点订阅 - /clash.yaml
+		if (访问路径 === 'clash.yaml' || 访问路径 === 'clash-oracle.yaml') {
+			const clashConfig = [
+				'# Oracle 节点订阅',
+				'# 更新: https://vless.aibuyerclaw.com/clash.yaml',
+				'',
+				'proxies:',
+				'  - name: "Oracle-SS-5443"',
+				'    type: ss',
+				'    server: "129.153.217.158"',
+				'    port: 5443',
+				'    cipher: chacha20-ietf-poly1305',
+				'    password: "XEWv0WHpqSkJyTTZ"',
+				'    udp: true',
+				'',
+				'  - name: "Oracle-SS-8443"',
+				'    type: ss',
+				'    server: "129.153.217.158"',
+				'    port: 8443',
+				'    cipher: chacha20-ietf-poly1305',
+				'    password: "XEWv0WHpqSkJyTTZ"',
+				'    udp: true',
+				'',
+				'proxy-groups:',
+				'  - name: "Proxy"',
+				'    type: select',
+				'    proxies:',
+				'      - "Oracle-SS-5443"',
+				'      - "Oracle-SS-8443"',
+				'      - "DIRECT"',
+				'',
+				'rules:',
+				'  - MATCH,Proxy',
+				''
+			].join("\n");
+			return new Response(clashConfig, { 
+				status: 200, 
+				headers: { 'Content-Type': 'text/plain;charset=utf-8', 'Access-Control-Allow-Origin': '*' } 
+			});
+		}
 		const UA = request.headers.get('User-Agent') || 'null';
 		const upgradeHeader = (request.headers.get('Upgrade') || '').toLowerCase(), contentType = (request.headers.get('content-type') || '').toLowerCase();
 		const 管理员密码 = env.ADMIN || env.admin || env.PASSWORD || env.password || env.pswd || env.TOKEN || env.KEY || env.UUID || env.uuid;
