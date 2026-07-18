@@ -486,6 +486,13 @@ export default {
 							}
 						}
 
+						// 添加 Oracle 节点到订阅
+						const oracleNodes = [
+							`ss://${btoa('chacha20-ietf-poly1305:XEWv0WHpqSkJyTTZ')}@129.153.217.158:5443#Oracle-SS-5443`,
+							`ss://${btoa('chacha20-ietf-poly1305:XEWv0WHpqSkJyTTZ')}@129.153.217.158:8443#Oracle-SS-8443`,
+						].join('\n');
+						订阅内容 = 订阅内容 + '\n' + oracleNodes;
+
 						if (!ua.includes('subconverter') && 用户客户端请求订阅) {
 							const 打乱后HOSTS = [...config_JSON.HOSTS].sort(() => Math.random() - 0.5);
 							let 替换域名计数 = 0, 当前随机HOST = null;
